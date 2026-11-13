@@ -1,0 +1,215 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Катонқарағай саяхаты</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Noto+Sans:wght@400;600;700&display=swap">
+<style>
+/* Орналасу: бүкіл экран — 3D карта; үстінде «жапсырма» стиліндегі басқару тақталары */
+:root {
+  --ink: #1f3347; --paper: #ffffff; --soft: #f0f5f9; --sky: #c4e4f4;
+  --sun: #ffdc7a; --grass: #6fae5a; --berry: #e4572e; --accent: #2f7de1; --muted: #64788b;
+  --line: rgba(31,51,71,.14); --shadow: 0 8px 24px rgba(31,51,71,.16); --shadow-s: 0 1px 4px rgba(31,51,71,.18);
+  --display: "Montserrat", "Noto Sans", system-ui, -apple-system, "Segoe UI", Arial, sans-serif; --body: "Noto Sans", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --gl: max(16px, env(safe-area-inset-left, 0px)); --gr: max(16px, env(safe-area-inset-right, 0px));
+  color-scheme: light;
+}
+:root[data-era="future"] { --ink: #17344d; --soft: #e9f7f6; --accent: #12a39b; --sun: #9cecdf; --sky: #c6eeee; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--sky); color: var(--ink); font: 400 15px/1.55 var(--body); overflow: hidden; }
+[hidden] { display: none !important; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+#app { position: relative; height: 100%; overflow: hidden; }
+#gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+#gl:active { cursor: grabbing; }
+#labels { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.lab { position: absolute; left: 0; top: 0; white-space: nowrap; pointer-events: none; font: 700 12px/1 var(--body); padding: 5px 9px; border-radius: 999px; visibility: hidden; }
+button.lab { pointer-events: auto; }
+.lab-site { background: var(--paper); border: 0; box-shadow: var(--shadow-s), 0 4px 12px rgba(31,51,71,.14); padding: 7px 12px 7px 28px; font: 700 13px/1 var(--display); }
+.lab-site::before { content: ""; position: absolute; left: 9px; top: 50%; width: 11px; height: 11px; margin-top: -8px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--c); box-shadow: inset 0 0 0 3px var(--c), inset 0 0 0 6px #fff; }
+.lab-site.sel { background: var(--sun); }
+.lab-city { background: var(--ink); color: #fff; border: 0; font: 700 13px/1 var(--display); padding: 7px 12px; }
+.lab-town { color: var(--ink); background: rgba(255,255,255,.75); font-weight: 700; font-size: 11px; }
+.lab-geo { color: #0e4d73; font-style: italic; font-weight: 700; font-size: 11px; text-shadow: 0 0 4px #fff, 0 0 4px #fff; }
+.lab-country { color: rgba(22,50,79,.55); letter-spacing: .3em; font-size: 13px; }
+
+.stick { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); }
+#hud { position: absolute; inset: 0 0 auto 0; padding: calc(10px + env(safe-area-inset-top, 0px)) var(--gr) 0 var(--gl); display: flex; flex-direction: column; gap: 8px; align-items: flex-start; pointer-events: none; }
+#hud > * { pointer-events: auto; }
+#bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 12px; max-width: 100%; box-sizing: border-box; }
+.brand { font: 700 15px/1.1 var(--display); letter-spacing: -.01em; margin-right: 4px; }
+.brand small { display: block; font: 700 11px/1.3 var(--body); color: var(--muted); letter-spacing: 0; margin-top: 3px; }
+.seg { display: flex; border: 1px solid var(--line); background: var(--soft); border-radius: 999px; overflow: hidden; }
+.seg button { border: 0; background: var(--paper); padding: 6px 12px; font-weight: 700; font-size: 13px; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+.nav { display: flex; gap: 6px; flex-wrap: wrap; }
+.nav button, .btn { border: 1px solid var(--line); background: var(--soft); border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 13px; box-shadow: var(--shadow-s); }
+.nav button:active, .btn:active { transform: translateY(2px); box-shadow: none; }
+.btn.primary, #btn-tour { background: var(--accent); color: #fff; }
+.btn.on { background: var(--sun); color: var(--ink); }
+#drivehud { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; max-width: 100%; }
+#drivehud .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 10px; }
+#drivehud b { font: 700 13px/1.25 var(--display); }
+#tourbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 10px; background: var(--sun); }
+#tour-txt { font-weight: 700; margin-right: 4px; }
+#toast { background: var(--ink); color: #fff; padding: 8px 14px; border-radius: 14px; max-width: min(560px, 100%); box-sizing: border-box; font-weight: 700; font-size: 13.5px; }
+#walkhud { display: flex; flex-direction: column; gap: 6px; max-width: 100%; }
+#walkhud .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+#walk-title { font: 700 13px/1.2 var(--display); background: var(--paper); border: 1px solid var(--line); box-shadow: var(--shadow-s); border-radius: 12px; padding: 7px 10px; }
+#walk-chips { display: flex; gap: 6px; overflow-x: auto; max-width: 100%; padding-bottom: 4px; }
+#walk-chips button { flex: none; border: 1px solid var(--line); background: var(--paper); border-radius: 999px; padding: 5px 11px; font-weight: 700; font-size: 12.5px; }
+#walk-chips button::before { content: "◆ "; color: #e0a800; }
+#walk-chips button.on { background: var(--sun); }
+
+.sheet { position: absolute; right: var(--gr); top: calc(84px + env(safe-area-inset-top, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); width: min(410px, calc(100% - 32px)); display: flex; flex-direction: column; overflow: hidden; }
+.p-head { display: flex; gap: 10px; justify-content: space-between; align-items: flex-start; padding: 12px 14px; background: var(--c, var(--ink)); color: #fff; }
+.p-type { display: block; font-weight: 700; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; opacity: .92; }
+.p-head h2 { margin: 3px 0 0; font: 700 16px/1.25 var(--display); text-wrap: balance; }
+.x { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: var(--paper); color: var(--ink); font-weight: 700; line-height: 1; }
+.p-body { overflow-y: auto; padding: 12px 14px 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.gal { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -14px; padding: 0 14px 4px; flex: none; }
+.gal figure { flex: none; width: 86%; margin: 0; scroll-snap-align: center; }
+.gal figure:only-child { width: 100%; }
+.gal img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 12px; border: 1px solid var(--line); display: block; background: var(--soft); box-sizing: border-box; }
+.gal figcaption { font-size: 12px; margin-top: 4px; line-height: 1.35; }
+.gal figcaption span { display: block; color: var(--muted); font-size: 10.5px; }
+.acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.desc { margin: 0; }
+.facts, .tips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.facts li { background: var(--soft); border: 1px solid var(--line); border-radius: 10px; padding: 4px 9px; font-weight: 700; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.tips { flex-direction: column; } .tips li { padding-left: 16px; position: relative; } .tips li::before { content: ""; position: absolute; left: 2px; top: .6em; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.sub { margin: 4px 0 -4px; font: 700 12.5px/1.2 var(--display); }
+.hots { display: flex; flex-wrap: wrap; gap: 6px; }
+.hots button { border: 1px solid var(--line); background: var(--paper); border-radius: 10px; padding: 6px 10px; font-weight: 700; font-size: 13px; text-align: left; }
+.hots button::before { content: "◆ "; color: #e0a800; }
+.person { display: flex; gap: 12px; background: var(--soft); border: 1px solid var(--line); border-radius: 14px; padding: 10px; }
+.person .ava { width: 84px; height: 112px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); flex: none; }
+.person div { min-width: 0; } .person h3 { margin: 0 0 4px; font: 700 13.5px/1.2 var(--display); } .person small { font: 700 12px var(--body); color: var(--muted); }
+.person p { margin: 0 0 6px; font-size: 13px; }
+.fut { background: #0e2a47; color: #e3fbfb; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.fut h3 { margin: 0; font: 700 13px var(--display); color: #6ef0e3; } .fut p { margin: 0; } .fut .btn { color: var(--ink); }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.tabs button { border: 1px solid var(--line); background: var(--paper); border-radius: 10px; padding: 6px 10px; font-weight: 700; font-size: 13px; }
+.tabs button[aria-selected="true"] { background: var(--ink); color: #fff; }
+.stops { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 0; font-weight: 700; font-size: 12.5px; }
+.stops li { display: flex; align-items: center; }
+.stops li::before { content: ""; width: 10px; height: 10px; border-radius: 50%; border: 2.5px solid var(--accent); margin-right: 5px; background: var(--paper); }
+.stops li:not(:last-child)::after { content: ""; width: 14px; height: 3px; background: var(--accent); margin: 0 5px; border-radius: 2px; }
+.stat { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat div { background: var(--soft); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; }
+.stat b { display: block; font: 700 14px/1.2 var(--display); font-variant-numeric: tabular-nums; } .stat span { font-size: 12px; color: var(--muted); font-weight: 700; }
+.grid { display: grid; grid-template-columns: 1fr; gap: 6px; }
+.grid button { display: flex; align-items: center; gap: 10px; text-align: left; border: 1px solid var(--line); background: var(--paper); border-radius: 12px; padding: 8px 10px; font-weight: 700; }
+.grid i { flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--c); border: 1px solid var(--line); }
+.note { margin: 0; font-size: 12px; color: var(--muted); }
+
+#mapctl { position: absolute; left: var(--gl); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 6px; }
+#mapctl button, #dpad button { width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper); box-shadow: var(--shadow-s); font-weight: 700; font-size: 17px; line-height: 1; touch-action: none; user-select: none; -webkit-user-select: none; }
+#mapctl small { font: 700 11px/1.3 var(--body); background: rgba(255,255,255,.8); border-radius: 8px; padding: 4px 6px; max-width: 150px; }
+#dpad { position: absolute; left: var(--gl); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: repeat(3, 42px); gap: 5px; }
+#dpad [data-k="arrowup"] { grid-column: 2; } #dpad [data-k="arrowleft"] { grid-column: 1; grid-row: 2; } #dpad [data-k="arrowdown"] { grid-column: 2; grid-row: 2; } #dpad [data-k="arrowright"] { grid-column: 3; grid-row: 2; }
+:root:not([data-mode="walk"]):not([data-drive]) #dpad { display: none; }
+#card { position: absolute; right: var(--gr); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); width: min(440px, calc(100% - 32px)); max-height: 46%; overflow-y: auto; padding: 12px; display: flex; gap: 12px; box-sizing: border-box; }
+#card img { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); flex: none; }
+#card div { min-width: 0; } #card h3 { margin: 0 34px 4px 0; font: 700 14px/1.25 var(--display); } #card p { margin: 0 0 8px; } #card small { display: block; color: var(--muted); font-size: 10.5px; margin-bottom: 8px; }
+#card .x { position: absolute; right: 10px; top: 10px; }
+#intro { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(14,42,71,.45); padding: 16px var(--gr) 16px var(--gl); }
+#intro .box { max-width: 520px; padding: 22px; text-align: left; }
+#intro h1 { margin: 0 0 8px; font: 700 clamp(22px, 5vw, 32px)/1.12 var(--display); text-wrap: balance; }
+#intro p { margin: 0 0 14px; } #intro ul { margin: 0 0 16px; padding-left: 18px; } #intro .btn { font-size: 15px; padding: 10px 18px; }
+
+@media (max-width: 720px) {
+  .brand small { display: none; }
+  .sheet { left: 0; right: 0; bottom: 0; top: auto; width: auto; max-height: 56%; border-radius: 18px 18px 0 0; border-width: 2.5px 0 0; box-shadow: none; padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .p-body { padding-left: var(--gl); padding-right: var(--gr); }
+  #mapctl small { display: none; }
+  .sheet:not([hidden]) ~ #mapctl { display: none; }
+  #bar { padding: 6px 8px; gap: 6px 8px; }
+  .nav button, .seg button { padding: 5px 9px; font-size: 12px; }
+  .brand { font-size: 13px; }
+  :root[data-mode="walk"] #card:not([hidden]) ~ #dpad { bottom: calc(46% + 24px); }
+  #card { left: var(--gl); right: var(--gr); width: auto; max-height: 44%; }
+  #card img { width: 84px; height: 84px; }
+}
+@media (prefers-reduced-motion: reduce) { .btn:active, .nav button:active { transform: none; } }
+</style>
+
+<div id="app">
+  <canvas id="gl" aria-label="Катонқарағайдың 3D картасы"></canvas>
+  <div id="labels"></div>
+
+  <div id="hud">
+    <div id="bar" class="stick">
+      <div class="brand">Катонқарағай саяхаты<small>Туристік нысандардың 3D картасы</small></div>
+      <div class="seg" role="group" aria-label="Уақыт режимі">
+        <button data-era="now" aria-pressed="true">Бүгін</button>
+        <button data-era="future" aria-pressed="false">Болашақ</button>
+      </div>
+      <div class="nav">
+        <button id="btn-list">Нысандар</button>
+        <button id="btn-routes">Маршруттар</button>
+        <button id="btn-tour">Экскурсия</button>
+        <button id="btn-drive">Көлік жүргізу</button>
+        <button id="btn-sound" aria-pressed="true">Дыбыс: қосулы</button>
+      </div>
+    </div>
+    <div id="tourbar" class="stick" hidden>
+      <span id="tour-txt"></span>
+      <button class="btn" id="tour-pause">Кідірту</button>
+      <button class="btn" id="tour-next">Келесі</button>
+      <button class="btn" id="tour-end">Аяқтау</button>
+    </div>
+    <div id="drivehud" hidden>
+      <div class="row stick"><b>Көлікті өзіңіз жүргізіп келесіз</b><button class="btn" id="drive-fly" hidden>Ұшу</button><button class="btn" id="drive-end">Аяқтау</button></div>
+      <div class="row stick" id="drivenear" hidden><b id="drive-txt"></b><button class="btn" id="drive-say" data-say="">Тыңдау</button><button class="btn" id="drive-open">Толығырақ</button><button class="btn primary" id="drive-enter">Ішіне кіру</button></div>
+    </div>
+    <div id="walkhud" hidden>
+      <div class="row"><button class="btn primary" id="walk-back">← Картаға қайту</button><span id="walk-title"></span></div>
+      <div id="walk-chips"></div>
+    </div>
+    <div id="toast" role="status" hidden></div>
+  </div>
+
+  <aside id="panel" class="sheet stick" hidden></aside>
+  <aside id="routes" class="sheet stick" hidden></aside>
+  <aside id="list" class="sheet stick" hidden></aside>
+
+  <div id="mapctl">
+    <button id="zin" aria-label="Жақындату">+</button>
+    <button id="zout" aria-label="Алыстату">−</button>
+    <button id="rl" aria-label="Солға бұру">⟲</button>
+    <button id="rr" aria-label="Оңға бұру">⟳</button>
+    <button id="home" aria-label="Бастапқы көрініс">⌂</button>
+    <small>Сүйреу — жылжыту · дөңгелек — масштаб · оң батырма — бұру</small>
+  </div>
+
+  <div id="card" class="stick" hidden></div>
+  <div id="dpad" aria-label="Жүру батырмалары">
+    <button data-k="arrowup" aria-label="Алға">▲</button>
+    <button data-k="arrowleft" aria-label="Солға бұрылу">◀</button>
+    <button data-k="arrowdown" aria-label="Артқа">▼</button>
+    <button data-k="arrowright" aria-label="Оңға бұрылу">▶</button>
+  </div>
+
+  <div id="intro">
+    <div class="box stick">
+      <h1>Катонқарағайдың туристік нысандарына саяхат</h1>
+      <p>Алтайдың 14 нысаны бір картада: Мұзтау шыңы, Берел қорғандары, Рахман қайнары, Оралхан Бөкейдің музей-үйі және басқалары.</p>
+      <ul>
+        <li>Нысанды басыңыз: суреттер, тарихы және қазақша дыбыстау ашылады.</li>
+        <li>«Ішіне кіру» батырмасымен нысанды аралап, жәдігерлерді қолға алып көріңіз.</li>
+        <li>«Маршруттар»: Өскемен – Катонқарағай – Берел жолы көлікпен, автобуспен, ұшақпен.</li>
+        <li>«Көлік жүргізу»: көлікті өзіңіз басқарып, нысандарды аралаңыз. Жақындағанда экскурсия өзі басталады.</li>
+        <li>«Болашақ»: күн панельдері, жел генераторлары және ұшатын электрокар.</li>
+      </ul>
+      <button class="btn primary" id="start">Саяхатты бастау</button>
+    </div>
+  </div>
+</div>
+
+<script src="lib/three.min.js"></script>
+<script src="data.js"></script>
+<script src="credits.js"></script>
+<script src="kit.js"></script>
+<script src="scenes.js"></script>
+<script src="app.js"></script>
